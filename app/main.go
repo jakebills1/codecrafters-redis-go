@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -26,5 +27,16 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	conn.Write([]byte("+PONG\r\n"))
+	defer conn.Close()
+	var line = make([]byte, 14)
+	for {
+
+		_, readErr := io.ReadFull(conn, line)
+		if readErr != nil {
+			conn.Close()
+			os.Exit(0)
+		}
+		conn.Write([]byte("+PONG\r\n"))
+	}
+	os.Exit(0)
 }
