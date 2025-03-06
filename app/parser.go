@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"errors"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -13,7 +15,7 @@ import (
 // and a 2 has to be ECHO
 
 type Command interface {
-	message() []byte
+	encodedResponse() []byte
 }
 type Ping struct {
 	Message string
@@ -22,15 +24,15 @@ type Echo struct {
 	Message string
 }
 
-func (p Ping) message() []byte {
+func (p Ping) encodedResponse() []byte {
 	return encodeAsSimpleString(p.Message)
 }
 
-func (e Echo) message() []byte {
+func (e Echo) encodedResponse() []byte {
 	return encodeAsBulkString(e.Message)
 }
 
-func (u Unknown) message() []byte {
+func (u Unknown) encodedResponse() []byte {
 	return []byte("Unknown command")
 }
 
@@ -50,10 +52,16 @@ func parseCommand(commandParts []string) Command {
 	}
 }
 
-func extractCommandParts(scanner *bufio.Scanner) *[]string {
-	scanner.Scan()
+func extractCommandParts(scanner *bufio.Scanner) (*[]string, error) {
+	scan := scanner.Scan()
+	if !scan {
+		return nil, errors.New("end of input")
+	}
 	// first will be *n, indicating the size of the RESP array
-	arraySize, _ := strconv.Atoi(strings.TrimPrefix(scanner.Text(), "*"))
+	arraySize, err := strconv.Atoi(strings.TrimPrefix(scanner.Text(), "*"))
+	if err != nil {
+		log.Fatalln("could not parse", scanner.Text(), "as int:", err)
+	}
 	commandArr := make([]string, arraySize)
 	// fmt.Println("len(commandArr) = ", len(commandArr))
 	for i := 0; i < arraySize; i++ {
@@ -62,5 +70,5 @@ func extractCommandParts(scanner *bufio.Scanner) *[]string {
 		line := scanner.Text()
 		commandArr[i] = line
 	}
-	return &commandArr
+	return &commandArr, nil
 }

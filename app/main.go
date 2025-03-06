@@ -31,11 +31,15 @@ func main() {
 
 func handleConn(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
-	for {
-		// default scanner functionality will return text up until \r\n
-		commandArr := extractCommandParts(scanner)
-		command := parseCommand(*commandArr)
-		conn.Write(command.message())
+	endReached := false
+	for !endReached {
+		commandArr, err := extractCommandParts(scanner)
+		if err != nil {
+			endReached = true
+		} else {
+			command := parseCommand(*commandArr)
+			conn.Write(command.encodedResponse())
+		}
 	}
 
 }
