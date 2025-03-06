@@ -27,7 +27,6 @@ type Set struct {
 }
 
 type Get struct {
-	Key   string
 	Value string
 }
 
@@ -48,7 +47,7 @@ func (g Get) encodedResponse() []byte {
 }
 
 func (u Unknown) encodedResponse() []byte {
-	return []byte("Unknown command")
+	return encodeAsSimpleString("Not Implemented")
 }
 
 type Unknown struct{}
@@ -62,6 +61,15 @@ func parseCommand(commandParts []string) Command {
 		return &Echo{Message: commandParts[1]}
 	case "PING":
 		return &Ping{}
+	case "SET":
+		key := commandParts[1]
+		value := commandParts[2]
+		db.Set(key, value)
+		return &Set{}
+	case "GET":
+		key := commandParts[1]
+		value := db.Get(key)
+		return &Get{Value: value}
 	default:
 		return &Unknown{}
 	}
