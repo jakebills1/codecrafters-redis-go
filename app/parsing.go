@@ -18,18 +18,33 @@ type Command interface {
 	encodedResponse() []byte
 }
 type Ping struct {
-	Message string
 }
 type Echo struct {
 	Message string
 }
 
+type Set struct {
+}
+
+type Get struct {
+	Key   string
+	Value string
+}
+
 func (p Ping) encodedResponse() []byte {
-	return encodeAsSimpleString(p.Message)
+	return encodeAsSimpleString("PONG")
 }
 
 func (e Echo) encodedResponse() []byte {
 	return encodeAsBulkString(e.Message)
+}
+
+func (s Set) encodedResponse() []byte {
+	return encodeAsSimpleString("OK")
+}
+
+func (g Get) encodedResponse() []byte {
+	return encodeAsBulkString(g.Value)
 }
 
 func (u Unknown) encodedResponse() []byte {
@@ -46,7 +61,7 @@ func parseCommand(commandParts []string) Command {
 	case "ECHO":
 		return &Echo{Message: commandParts[1]}
 	case "PING":
-		return &Ping{Message: "PONG"}
+		return &Ping{}
 	default:
 		return &Unknown{}
 	}
