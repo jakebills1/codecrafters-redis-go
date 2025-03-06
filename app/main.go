@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"os"
 )
@@ -30,14 +30,11 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
-	var line = make([]byte, 14)
+	scanner := bufio.NewScanner(conn)
 	for {
-
-		_, readErr := io.ReadFull(conn, line)
-		if readErr != nil {
-			conn.Close()
-		}
-		command := parseCommand(line)
+		// default scanner functionality will return text up until \r\n
+		commandArr := extractCommandParts(scanner)
+		command := parseCommand(*commandArr)
 		conn.Write(command.message())
 	}
 

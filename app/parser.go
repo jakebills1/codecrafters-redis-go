@@ -1,6 +1,10 @@
 package main
 
-import "strconv"
+import (
+	"bufio"
+	"strconv"
+	"strings"
+)
 
 // commands are arrays of bulk strings
 // *n means an array where n is the number of elements
@@ -32,30 +36,31 @@ func (u Unknown) message() []byte {
 
 type Unknown struct{}
 
-func parseCommand(command []byte) Command {
-	elements, err := strconv.Atoi(string(command[1]))
-	if err != nil {
-		return &Unknown{}
-	}
-	if elements == 1 {
-		// ping
+func parseCommand(commandParts []string) Command {
+	// fmt.Println("commandParts =", commandParts)
+	// fmt.Println("commandParts[0] =", commandParts[0])
+
+	switch commandParts[0] {
+	case "ECHO":
+		return &Echo{Message: commandParts[1]}
+	case "PING":
 		return &Ping{Message: "PONG"}
-	} else if elements == 2 {
-		return &Echo{Message: parseBulkString(string(command[15:])).Contents}
-	} else {
-		// presently unknown command
+	default:
 		return &Unknown{}
 	}
 }
 
-type BulkString struct {
-	Length   int
-	Contents string
-}
-
-func parseBulkString(raw string) BulkString {
-	var bs BulkString
-	bs.Length = int(raw[1] - '0')
-	bs.Contents = raw[4:bs.Length]
-	return bs
+func extractCommandParts(scanner *bufio.Scanner) *[]string {
+	scanner.Scan()
+	// first will be *n, indicating the size of the RESP array
+	arraySize, _ := strconv.Atoi(strings.TrimPrefix(scanner.Text(), "*"))
+	commandArr := make([]string, arraySize)
+	// fmt.Println("len(commandArr) = ", len(commandArr))
+	for i := 0; i < arraySize; i++ {
+		scanner.Scan() // gets the string size, don't need right now
+		scanner.Scan() // gets the string
+		line := scanner.Text()
+		commandArr[i] = line
+	}
+	return &commandArr
 }
