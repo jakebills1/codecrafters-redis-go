@@ -53,6 +53,7 @@ func (u Unknown) encodedResponse() []byte {
 type Unknown struct{}
 
 func parseCommand(commandParts []string) Command {
+	// todo this should be a struct, not an array
 	// fmt.Println("commandParts =", commandParts)
 	// fmt.Println("commandParts[0] =", commandParts[0])
 
@@ -64,7 +65,12 @@ func parseCommand(commandParts []string) Command {
 	case "SET":
 		key := commandParts[1]
 		value := commandParts[2]
-		db.Set(key, value)
+		if len(commandParts) > 3 {
+			expiry, _ := strconv.ParseInt(commandParts[4], 10, 64)
+			db.SetWithExpiry(key, value, expiry)
+		} else {
+			db.Set(key, value)
+		}
 		return &Set{}
 	case "GET":
 		key := commandParts[1]
@@ -86,7 +92,7 @@ func extractCommandParts(scanner *bufio.Scanner) (*[]string, error) {
 		log.Fatalln("could not parse", scanner.Text(), "as int:", err)
 	}
 	commandArr := make([]string, arraySize)
-	// fmt.Println("len(commandArr) = ", len(commandArr))
+	//fmt.Println("len(commandArr) = ", len(commandArr))
 	for i := 0; i < arraySize; i++ {
 		scanner.Scan() // gets the string size, don't need right now
 		scanner.Scan() // gets the string
